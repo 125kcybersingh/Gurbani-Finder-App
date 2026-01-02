@@ -1,10 +1,12 @@
 import { View, Text } from 'react-native';
 import { Button } from '@/components/ui/Button';
+import { useRouter } from 'expo-router';
 
 export default function HomeScreen() {
+  const router = useRouter();
+
   const handleScanPress = () => {
-    // TODO: Navigate to camera screen
-    console.log('Scan Shabad pressed');
+    router.push('/scan');
   };
 
   return (
