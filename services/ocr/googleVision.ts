@@ -95,7 +95,24 @@ export async function recognizeTextFromImage(imageUri: string): Promise<OCRResul
     };
   } catch (error) {
     console.error('Error in Google Vision OCR:', error);
-    throw error;
+    
+    // Provide more specific error messages
+    if (error instanceof Error) {
+      if (error.message.includes('Network')) {
+        throw new Error('Network error. Please check your internet connection and try again.');
+      }
+      if (error.message.includes('API key')) {
+        throw new Error('API configuration error. Please contact support.');
+      }
+      if (error.message.includes('quota') || error.message.includes('limit')) {
+        throw new Error('API quota exceeded. Please try again later.');
+      }
+      if (error.message.includes('FileSystem')) {
+        throw new Error('Failed to read image file. Please try capturing again.');
+      }
+    }
+    
+    throw new Error('Failed to process image. Please try again.');
   }
 }
 

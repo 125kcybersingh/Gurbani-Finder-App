@@ -59,7 +59,21 @@ export async function fuzzyMatchGurmukhi(
     return results;
   } catch (error) {
     console.error('Error in fuzzy match:', error);
-    throw error;
+    
+    // Provide more specific error messages
+    if (error instanceof Error) {
+      if (error.message.includes('Network') || error.message.includes('fetch')) {
+        throw new Error('Network error. Please check your internet connection and try again.');
+      }
+      if (error.message.includes('permission') || error.message.includes('RLS')) {
+        throw new Error('Database access error. Please try again.');
+      }
+      if (error.message.includes('timeout')) {
+        throw new Error('Request timed out. Please try again.');
+      }
+    }
+    
+    throw new Error('Failed to search for shabads. Please try again.');
   }
 }
 

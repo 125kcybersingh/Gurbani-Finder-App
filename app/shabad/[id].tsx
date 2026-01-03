@@ -1,16 +1,11 @@
 import { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { getShabadFromLine } from '@/services/matching/fuzzyMatch';
 import { useBookmarkStore } from '@/stores/useBookmarkStore';
-// Haptics is optional - will gracefully fail if not available
-let Haptics: any = null;
-try {
-  Haptics = require('expo-haptics');
-} catch {
-  // Haptics not available
-}
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { triggerHaptic, HapticType } from '@/utils/haptics';
 
 interface ShabadDetail {
   shabad: {
@@ -66,7 +61,18 @@ export default function ShabadDetailScreen() {
       setShabadDetail(detail);
     } catch (err) {
       console.error('Error loading shabad detail:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load shabad');
+      
+      let errorMessage = 'Failed to load shabad. Please try again.';
+      
+      if (err instanceof Error) {
+        errorMessage = err.message;
+        
+        if (err.message.includes('Network') || err.message.includes('internet')) {
+          errorMessage += ' Make sure you have an internet connection.';
+        }
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -76,14 +82,12 @@ export default function ShabadDetailScreen() {
     if (!shabadDetail) return;
 
     try {
-      if (Haptics) {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      }
-
       if (bookmarked) {
+        triggerHaptic(HapticType.Light);
         removeBookmark(lineId);
         Alert.alert('Removed', 'Shabad removed from bookmarks');
       } else {
+        triggerHaptic(HapticType.Success);
         const matchedLine = shabadDetail.matchedLine;
         addBookmark({
           lineId: matchedLine.id,
@@ -97,6 +101,7 @@ export default function ShabadDetailScreen() {
       }
     } catch (err) {
       console.error('Error toggling bookmark:', err);
+      triggerHaptic(HapticType.Error);
       Alert.alert('Error', 'Failed to update bookmark');
     }
   };
@@ -104,10 +109,7 @@ export default function ShabadDetailScreen() {
   if (loading) {
     return (
       <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
-        <View className="flex-1 items-center justify-center">
-        <ActivityIndicator size="large" color="#FF9933" />
-        <Text className="text-navy mt-4 text-lg">Loading shabad...</Text>
-        </View>
+        <LoadingSpinner message="Loading shabad..." />
       </SafeAreaView>
     );
   }

@@ -8,12 +8,8 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import 'react-native-reanimated';
 import '../global.css';
 
-import { useColorScheme } from '@/components/useColorScheme';
-
-export {
-  // Catch any errors thrown by the Layout component.
-  ErrorBoundary,
-} from 'expo-router';
+import { useColorScheme } from '@/hooks/useColorScheme';
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 
 export const unstable_settings = {
   // Ensure that reloading on `/modal` keeps a back button present.
@@ -51,36 +47,62 @@ function RootLayoutNav() {
   const colorScheme = useColorScheme();
 
   return (
-    <SafeAreaProvider>
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen 
-          name="scan" 
-          options={{ 
-            headerShown: false,
-            presentation: 'fullScreenModal',
-          }} 
-        />
-        <Stack.Screen 
-          name="results" 
-          options={{ 
-            title: 'Results',
-            headerBackTitle: 'Back',
-            headerTintColor: '#FF9933',
-          }} 
-        />
-        <Stack.Screen 
-          name="shabad/[id]" 
-          options={{ 
-            title: 'Shabad',
-            headerBackTitle: 'Back',
-            headerTintColor: '#FF9933',
-          }} 
-        />
-        <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-        </Stack>
-      </ThemeProvider>
-    </SafeAreaProvider>
+    <ErrorBoundary>
+      <SafeAreaProvider>
+        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+          <Stack>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+          <Stack.Screen 
+            name="scan" 
+            options={{ 
+              headerShown: false,
+              presentation: 'fullScreenModal',
+            }} 
+          />
+          <Stack.Screen 
+            name="listen" 
+            options={{ 
+              title: 'Listen',
+              headerBackTitle: 'Back',
+              headerTintColor: '#FF9933',
+            }} 
+          />
+          <Stack.Screen 
+            name="results" 
+            options={{ 
+              title: 'Results',
+              headerBackTitle: 'Back',
+              headerTintColor: '#FF9933',
+            }} 
+          />
+          <Stack.Screen 
+            name="shabad/[id]" 
+            options={{ 
+              title: 'Shabad',
+              headerBackTitle: 'Back',
+              headerTintColor: '#FF9933',
+            }} 
+          />
+          <Stack.Screen 
+            name="collection/[id]" 
+            options={{ 
+              title: 'Collection',
+              headerBackTitle: 'Back',
+              headerTintColor: '#FF9933',
+            }} 
+          />
+          <Stack.Screen 
+            name="onboarding" 
+            options={{ 
+              headerShown: false,
+              presentation: 'fullScreenModal',
+            }} 
+          />
+          <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+          </Stack>
+        </ThemeProvider>
+      </SafeAreaProvider>
+    </ErrorBoundary>
   );
 }

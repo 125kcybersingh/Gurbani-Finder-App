@@ -1,5 +1,6 @@
 import { View, Text, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
+import { triggerHaptic, HapticType } from '@/utils/haptics';
 
 export interface ShabadCardProps {
   lineId: number;
@@ -29,7 +30,13 @@ export function ShabadCard({
   const router = useRouter();
 
   const handleViewFull = () => {
+    triggerHaptic(HapticType.Light);
     router.push(`/shabad/${lineId}`);
+  };
+
+  const handleBookmarkPress = () => {
+    triggerHaptic(HapticType.Light);
+    onBookmark?.();
   };
 
   return (
@@ -85,7 +92,7 @@ export function ShabadCard({
             className={`flex-1 border-2 ${
               isBookmarked ? 'border-saffron bg-saffron/10' : 'border-navy'
             } px-4 py-3 rounded-lg`}
-            onPress={onBookmark}
+            onPress={handleBookmarkPress}
           >
             <Text
               className={`${

@@ -1,34 +1,52 @@
 import { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useBookmarkStore } from '@/stores/useBookmarkStore';
 import { ShabadCard } from '@/components/shabad/ShabadCard';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { triggerHaptic, HapticType } from '@/utils/haptics';
 
 export default function SavedScreen() {
   const router = useRouter();
   const { bookmarks, removeBookmark } = useBookmarkStore();
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Bookmarks are loaded automatically by zustand persist
+    // Just set loading to false after a brief delay to show spinner
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleRemoveBookmark = (lineId: number) => {
     removeBookmark(lineId);
   };
 
+  if (isLoading) {
+    return (
+      <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
+        <LoadingSpinner message="Loading bookmarks..." />
+      </SafeAreaView>
+    );
+  }
+
   if (bookmarks.length === 0) {
     return (
       <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
-        <View className="flex-1 items-center justify-center px-6">
-        <Text className="text-6xl mb-4">📚</Text>
-        <Text className="text-2xl font-bold text-navy mb-2">No Bookmarks Yet</Text>
-        <Text className="text-gray-600 text-center mb-8">
-          Bookmark shabads you want to remember or study later. They'll appear here.
-        </Text>
-        <TouchableOpacity
-          className="bg-saffron px-8 py-4 rounded-lg"
-          onPress={() => router.push('/(tabs)')}
-        >
-          <Text className="text-white font-semibold text-lg">Start Scanning</Text>
-        </TouchableOpacity>
-        </View>
+        <EmptyState
+          icon="📚"
+          title="No Bookmarks Yet"
+          description="Bookmark shabads that move you or that you want to study later. Tap the bookmark button on any shabad to save it here."
+          actionLabel="Start Scanning"
+          onAction={() => {
+            triggerHaptic(HapticType.Light);
+            router.push('/(tabs)');
+          }}
+        />
       </SafeAreaView>
     );
   }
