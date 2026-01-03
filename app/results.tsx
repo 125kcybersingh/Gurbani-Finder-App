@@ -1,8 +1,18 @@
 import { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator, Alert, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { recognizeTextFromImage } from '@/services/ocr/googleVision';
-import { fuzzyMatchGurmukhi, getShabadFromLine, MatchResult } from '@/services/matching/fuzzyMatch';
+import { fuzzyMatchGurmukhi, MatchResult } from '@/services/matching/fuzzyMatch';
+import { ShabadCard } from '@/components/shabad/ShabadCard';
+import { useBookmarkStore } from '@/stores/useBookmarkStore';
+// Haptics is optional - will gracefully fail if not available
+let Haptics: any = null;
+try {
+  Haptics = require('expo-haptics');
+} catch {
+  // Haptics not available
+}
 
 export default function ResultsScreen() {
   const { imageUri } = useLocalSearchParams<{ imageUri: string }>();
@@ -11,6 +21,8 @@ export default function ResultsScreen() {
   const [matches, setMatches] = useState<MatchResult[]>([]);
   const [detectedText, setDetectedText] = useState('');
   const [error, setError] = useState<string | null>(null);
+
+  const { isBookmarked, addBookmark, removeBookmark } = useBookmarkStore();
 
   useEffect(() => {
     processImage();
@@ -54,16 +66,19 @@ export default function ResultsScreen() {
 
   if (isLoading) {
     return (
-      <View className="flex-1 bg-white items-center justify-center">
+      <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
+        <View className="flex-1 items-center justify-center">
         <ActivityIndicator size="large" color="#FF9933" />
         <Text className="text-navy mt-4 text-lg">Identifying shabad...</Text>
-      </View>
+        </View>
+      </SafeAreaView>
     );
   }
 
   if (error) {
     return (
-      <View className="flex-1 bg-white items-center justify-center px-6">
+      <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
+        <View className="flex-1 items-center justify-center px-6">
         <Text className="text-2xl mb-4">❌</Text>
         <Text className="text-xl font-bold text-navy mb-2">No Match Found</Text>
         <Text className="text-gray-600 mb-8 text-center">{error}</Text>
@@ -80,21 +95,14 @@ export default function ResultsScreen() {
           <Text className="text-white font-semibold text-lg">Try Again</Text>
         </TouchableOpacity>
       </View>
-    );
-  }
+    </SafeAreaView>
+  );
+}
 
   return (
-    <ScrollView className="flex-1 bg-white">
-      <View className="px-6 py-8">
-        {/* Success Header */}
-        <View className="items-center mb-6">
-          <Text className="text-4xl mb-2">✓</Text>
-          <Text className="text-2xl font-bold text-navy">Shabad Identified</Text>
-          <Text className="text-gray-600 mt-1">
-            {matches.length} match{matches.length > 1 ? 'es' : ''} found
-          </Text>
-        </View>
-
+    <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
+      <ScrollView className="flex-1 bg-white">
+        <View className="px-6 py-8">
         {/* Detected Text */}
         {detectedText && (
           <View className="bg-gray-50 p-4 rounded-lg mb-6">
@@ -105,70 +113,37 @@ export default function ResultsScreen() {
 
         {/* Matches */}
         {matches.map((match, index) => (
-          <View
+          <ShabadCard
             key={match.lineId}
-            className={`bg-white border-2 ${
-              index === 0 ? 'border-saffron' : 'border-gray-200'
-            } rounded-xl p-6 mb-4`}
-          >
-            {/* Confidence Badge */}
-            <View className="flex-row items-center mb-4">
-              <View className="bg-saffron/10 px-3 py-1 rounded-full">
-                <Text className="text-saffron font-semibold text-sm">
-                  {Math.round(match.confidence * 100)}% match
-                </Text>
-              </View>
-              {index === 0 && (
-                <View className="bg-gold/20 px-3 py-1 rounded-full ml-2">
-                  <Text className="text-gold font-semibold text-sm">Best Match</Text>
-                </View>
-              )}
-            </View>
-
-            {/* Gurmukhi Text */}
-            <Text className="text-2xl text-navy mb-3 leading-relaxed">
-              {match.gurmukhi}
-            </Text>
-
-            {/* Transliteration */}
-            {match.transliteration && (
-              <Text className="text-gray-600 mb-2 italic">{match.transliteration}</Text>
-            )}
-
-            {/* Translation */}
-            {match.translation && (
-              <Text className="text-gray-700 mb-4">{match.translation}</Text>
-            )}
-
-            {/* Metadata */}
-            <View className="flex-row flex-wrap gap-2 mb-4">
-              <View className="bg-saffron/10 px-3 py-1 rounded-full">
-                <Text className="text-saffron font-semibold text-sm">
-                  Ang {match.sourcePage}
-                </Text>
-              </View>
-            </View>
-
-            {/* Actions */}
-            <View className="flex-row gap-3">
-              <TouchableOpacity className="flex-1 border-2 border-navy px-4 py-3 rounded-lg">
-                <Text className="text-navy font-semibold text-center">Bookmark</Text>
-              </TouchableOpacity>
-              <TouchableOpacity className="flex-1 bg-saffron px-4 py-3 rounded-lg">
-                <Text className="text-white font-semibold text-center">View Full</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+            lineId={match.lineId}
+            shabadId={match.shabadId}
+            gurmukhi={match.gurmukhi}
+            transliteration={match.transliteration}
+            translation={match.translation}
+            sourcePage={match.sourcePage}
+            confidence={match.confidence}
+            isBestMatch={index === 0}
+            isBookmarked={isBookmarked(match.lineId)}
+            onBookmark={() => addBookmark({
+              lineId: match.lineId,
+              shabadId: match.shabadId,
+              gurmukhi: match.gurmukhi,
+              transliteration: match.transliteration,
+              translation: match.translation,
+              sourcePage: match.sourcePage,
+            })}
+          />
         ))}
 
         {/* Back Button */}
         <TouchableOpacity
-          className="border-2 border-gray-300 px-6 py-4 rounded-lg mt-4"
+          className="border-2 border-gray-300 px-6 py-4 rounded-lg mt-4 bg-white"
           onPress={() => router.back()}
         >
           <Text className="text-gray-700 font-semibold text-center">Scan Another</Text>
         </TouchableOpacity>
       </View>
-    </ScrollView>
+      </ScrollView>
+    </SafeAreaView>
   );
 }

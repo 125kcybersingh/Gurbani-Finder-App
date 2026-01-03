@@ -1,4 +1,5 @@
 import Constants from 'expo-constants';
+import * as FileSystem from 'expo-file-system';
 
 const API_KEY = Constants.expoConfig?.extra?.googleCloudVisionApiKey || process.env.EXPO_PUBLIC_GOOGLE_CLOUD_VISION_API_KEY || '';
 
@@ -9,17 +10,29 @@ export interface OCRResult {
 
 export async function recognizeTextFromImage(imageUri: string): Promise<OCRResult> {
   if (!API_KEY) {
-    throw new Error('Google Cloud Vision API key is not configured');
+    throw new Error('Google Cloud Vision API key is not configured. Please set EXPO_PUBLIC_GOOGLE_CLOUD_VISION_API_KEY in your .env file.');
   }
 
   try {
-    // Convert image to base64
-    const response = await fetch(imageUri);
-    const blob = await response.blob();
-    const base64 = await blobToBase64(blob);
-
-    // Remove data URL prefix if present
-    const base64Image = base64.replace(/^data:image\/\w+;base64,/, '');
+    // Convert image to base64 for React Native
+    let base64Image: string;
+    
+    if (imageUri.startsWith('file://') || imageUri.startsWith('content://')) {
+      // Local file URI from camera - read using FileSystem
+      const base64 = await FileSystem.readAsStringAsync(imageUri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+      base64Image = base64;
+    } else if (imageUri.startsWith('data:')) {
+      // Data URI - extract base64
+      base64Image = imageUri.split(',')[1];
+    } else {
+      // Remote URL - fetch and convert
+      const response = await fetch(imageUri);
+      const blob = await response.blob();
+      const base64 = await blobToBase64(blob);
+      base64Image = base64.replace(/^data:image\/\w+;base64,/, '');
+    }
 
     // Call Google Cloud Vision API
     const visionResponse = await fetch(
@@ -41,6 +54,9 @@ export async function recognizeTextFromImage(imageUri: string): Promise<OCRResul
                   maxResults: 1,
                 },
               ],
+              imageContext: {
+                languageHints: ['pa'], // Punjabi/Gurmukhi
+              },
             },
           ],
         }),

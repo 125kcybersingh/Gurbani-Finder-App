@@ -4,6 +4,7 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import 'react-native-reanimated';
 import '../global.css';
 
@@ -50,11 +51,36 @@ function RootLayoutNav() {
   const colorScheme = useColorScheme();
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
+    <SafeAreaProvider>
+      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen 
+          name="scan" 
+          options={{ 
+            headerShown: false,
+            presentation: 'fullScreenModal',
+          }} 
+        />
+        <Stack.Screen 
+          name="results" 
+          options={{ 
+            title: 'Results',
+            headerBackTitle: 'Back',
+            headerTintColor: '#FF9933',
+          }} 
+        />
+        <Stack.Screen 
+          name="shabad/[id]" 
+          options={{ 
+            title: 'Shabad',
+            headerBackTitle: 'Back',
+            headerTintColor: '#FF9933',
+          }} 
+        />
         <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-      </Stack>
-    </ThemeProvider>
+        </Stack>
+      </ThemeProvider>
+    </SafeAreaProvider>
   );
 }
